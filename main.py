@@ -1,6 +1,5 @@
-# Assets: https://techwithtim.net/wp-content/uploads/2020/09/assets.zip
 import pygame
-from checkers.constants import WIDTH, HEIGHT, SQUARE_SIZE, RED, WHITE
+from checkers.constants import WIDTH, HEIGHT, SQUARE_SIZE, WHITE
 from checkers.game import Game
 from minimax.algorithm import minimax
 
