@@ -5,7 +5,7 @@ class Piece:
     PADDING = 15
     OUTLINE = 2
 
-    def __init__(self, row, col, color):
+    def __init__(self, row: int, col: int, color):
         self.row = row
         self.col = col
         self.color = color
@@ -21,7 +21,7 @@ class Piece:
     def make_king(self):
         self.king = True
     
-    def draw(self, win):
+    def draw(self, win:pygame.Surface):
         radius = SQUARE_SIZE//2 - self.PADDING
         pygame.draw.circle(win, GREY, (self.x, self.y), radius + self.OUTLINE)
         pygame.draw.circle(win, self.color, (self.x, self.y), radius)

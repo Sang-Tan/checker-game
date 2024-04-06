@@ -1,17 +1,19 @@
 from copy import deepcopy
+from checkers.board import Board
+from checkers.game_state import GameState
 import pygame
 
 RED = (255,0,0)
 WHITE = (255, 255, 255)
 
-def minimax(position, depth, max_player, game):
-    if depth == 0 or position.winner() != None:
-        return position.evaluate(), position
+def minimax(game_state: GameState, depth, max_player:bool, game):
+    if depth == 0 or game_state.winner() != None:
+        return game_state.evaluate(), game_state
     
     if max_player:
         maxEval = float('-inf')
         best_move = None
-        for move in get_all_moves(position, WHITE, game):
+        for move in get_all_moves(game_state, WHITE, game):
             evaluation = minimax(move, depth-1, False, game)[0]
             maxEval = max(maxEval, evaluation)
             if maxEval == evaluation:
@@ -21,7 +23,7 @@ def minimax(position, depth, max_player, game):
     else:
         minEval = float('inf')
         best_move = None
-        for move in get_all_moves(position, RED, game):
+        for move in get_all_moves(game_state, RED, game):
             evaluation = minimax(move, depth-1, True, game)[0]
             minEval = min(minEval, evaluation)
             if minEval == evaluation:
@@ -30,7 +32,7 @@ def minimax(position, depth, max_player, game):
         return minEval, best_move
 
 
-def simulate_move(piece, move, board, game, skip):
+def simulate_move(piece, move, board, skip):
     board.move(piece, move[0], move[1])
     if skip:
         board.remove(skip)
@@ -38,16 +40,15 @@ def simulate_move(piece, move, board, game, skip):
     return board
 
 
-def get_all_moves(board, color, game):
+def get_all_moves(game_state: GameState, color):
     moves = []
 
-    for piece in board.get_all_pieces(color):
-        valid_moves = board.get_valid_moves(piece)
+    for piece in game_state.get_all_pieces(color):
+        valid_moves = game_state.get_valid_moves(piece)
         for move, skip in valid_moves.items():
-            # draw_moves(game, board, piece)
-            temp_board = deepcopy(board)
+            temp_board = deepcopy(game_state)
             temp_piece = temp_board.get_piece(piece.row, piece.col)
-            new_board = simulate_move(temp_piece, move, temp_board, game, skip)
+            new_board = simulate_move(temp_piece, move, temp_board, skip)
             moves.append(new_board)
     
     return moves
