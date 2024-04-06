@@ -3,9 +3,9 @@ from .constants import RED, WHITE, BLUE, SQUARE_SIZE
 from checkers.board import Board
 
 class Game:
-    def __init__(self, win):
+    def __init__(self, window:pygame.Surface):
         self._init()
-        self.win = win
+        self.win:pygame.Surface = window
     
     def update(self):
         self.board.draw(self.win)
@@ -14,7 +14,7 @@ class Game:
 
     def _init(self):
         self.selected = None
-        self.board = Board()
+        self.board:Board = Board()
         self.turn = RED
         self.valid_moves = {}
 
@@ -32,7 +32,7 @@ class Game:
                 self.select(row, col)
         
         piece = self.board.get_piece(row, col)
-        if piece != 0 and piece.color == self.turn:
+        if piece != None and piece.color == self.turn:
             self.selected = piece
             self.valid_moves = self.board.get_valid_moves(piece)
             return True
@@ -41,7 +41,7 @@ class Game:
 
     def _move(self, row, col):
         piece = self.board.get_piece(row, col)
-        if self.selected and piece == 0 and (row, col) in self.valid_moves:
+        if self.selected and piece == None and (row, col) in self.valid_moves:
             self.board.move(self.selected, row, col)
             skipped = self.valid_moves[(row, col)]
             if skipped:

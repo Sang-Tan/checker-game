@@ -1,4 +1,3 @@
-# Assets: https://techwithtim.net/wp-content/uploads/2020/09/assets.zip
 import pygame
 from checkers.constants import WIDTH, HEIGHT, SQUARE_SIZE, RED, WHITE
 from checkers.game import Game
@@ -6,7 +5,7 @@ from minimax.algorithm import minimax
 
 FPS = 60
 
-WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+GAME_WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Checkers')
 
 def get_row_col_from_mouse(pos):
@@ -18,7 +17,7 @@ def get_row_col_from_mouse(pos):
 def main():
     run = True
     clock = pygame.time.Clock()
-    game = Game(WIN)
+    game = Game(GAME_WINDOW)
 
     while run:
         clock.tick(FPS)
