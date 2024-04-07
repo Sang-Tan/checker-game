@@ -7,7 +7,7 @@ class GameState(ABC):
         pass
     
     @abstractmethod
-    def evaluate(self)->int|float:
+    def heuristic(self)->int|float:
         pass
     
     @abstractmethod

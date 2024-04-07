@@ -75,7 +75,7 @@ while True:
         print("Winner: ", board.winner())
         break
     
-    best_move = minimax(board, 4, True, None)[1]
+    best_move = minimax(board, 4, True)[1]
     
     if isinstance(best_move, Board):
         board = best_move 
