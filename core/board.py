@@ -1,7 +1,9 @@
-import pygame
+import logging
 from copy import deepcopy
 from .piece import Piece, PieceSide
 from .game_state import GameState
+
+logger = logging.getLogger(__name__)
 
 class Board(GameState):
     def __init__(self, total_rows:int, total_cols:int):
@@ -13,7 +15,7 @@ class Board(GameState):
         self.create_board()
 
     def evaluate(self):
-        return self.pieces_left[PieceSide.PLAYER] - self.pieces_left[PieceSide.COMPUTER] + (self.kings[PieceSide.PLAYER] - self.kings[PieceSide.COMPUTER])
+        return self.pieces_left[PieceSide.COMPUTER] - self.pieces_left[PieceSide.PLAYER] + (self.kings[PieceSide.COMPUTER] - self.kings[PieceSide.PLAYER])
 
     def get_all_moves(self, color)->list["Board"]:
         moves = []
@@ -27,7 +29,7 @@ class Board(GameState):
         
         return moves
     
-    def simulate_move(self, piece, move, skip):
+    def simulate_move(self, piece, move, skip:list[Piece]):
         self.move(piece, move[0], move[1])
         if skip:
             self.remove(skip)
