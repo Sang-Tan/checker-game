@@ -14,7 +14,7 @@ class Board(GameState):
         self.total_cols = total_cols
         self.create_board()
 
-    def evaluate(self):
+    def heuristic(self):
         return self.pieces_left[PieceSide.COMPUTER] - self.pieces_left[PieceSide.PLAYER] + (self.kings[PieceSide.COMPUTER] - self.kings[PieceSide.PLAYER])
 
     def get_all_moves(self, color)->list["Board"]:
