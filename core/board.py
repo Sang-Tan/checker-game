@@ -2,10 +2,20 @@ import logging
 from copy import deepcopy
 from .piece import Piece, PieceSide
 from .game_state import GameState
+from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 
-class Board(GameState):
+class BoardData:
+    @abstractmethod
+    def __getitem__(self, key: int)->list[Piece | None]:
+        pass
+    
+    @abstractmethod
+    def get_size(self)->int:
+        pass
+
+class Board(GameState, BoardData):
     def __init__(self, total_rows:int, total_cols:int):
         self.board: list[list[Piece | None]] = []
         self.pieces_left = {PieceSide.PLAYER: 12, PieceSide.COMPUTER: 12}
@@ -14,12 +24,18 @@ class Board(GameState):
         self.total_cols = total_cols
         self.create_board()
 
+    def __getitem__(self, key: int)->list[Piece | None]:
+        return self.board[key]
+    
+    def get_size(self)->int:
+        return len(self.board)
+
     def heuristic(self):
         return self.pieces_left[PieceSide.COMPUTER] - self.pieces_left[PieceSide.PLAYER] + (self.kings[PieceSide.COMPUTER] - self.kings[PieceSide.PLAYER])
 
     def get_all_moves(self, color)->list["Board"]:
         moves = []
-        for piece in self.get_all_pieces(color):
+        for piece in self.get_pieces_by_side(color):
             valid_moves = self.get_valid_moves(piece)
             for move, skip in valid_moves.items():
                 temp_board = deepcopy(self)
@@ -36,7 +52,7 @@ class Board(GameState):
         
         return self
 
-    def get_all_pieces(self, side: PieceSide)->list[Piece]:
+    def get_pieces_by_side(self, side: PieceSide)->list[Piece]:
         pieces = []
         for row in self.board:
             for piece in row:
@@ -52,7 +68,7 @@ class Board(GameState):
             piece.make_king()
             self.kings[piece.side] += 1
 
-    def get_piece(self, row, col):
+    def get_piece(self, row, col)->Piece | None:
         return self.board[row][col]
 
     def create_board(self):
@@ -111,7 +127,7 @@ class Board(GameState):
     
         return moves
 
-    def get_data(self)->list[list[Piece | None]]:
+    def get_all_pieces(self)->list[list[Piece | None]]:
         return self.board
 
     def _traverse_left(self, start_row: int, stop_row: int, row_step: int, side:PieceSide, cur_col: int, skipped: list[Piece]=[])->dict[tuple[int, int], list[Piece]]:
