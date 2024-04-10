@@ -131,9 +131,9 @@ class Board(GameState, BoardData):
             self.board.append([])
             for col in range(self.total_cols):
                 if col % 2 == ((row +  1) % 2):
-                    if row < 3:
+                    if row < self.total_rows // 2 - 1:
                         self.board[row].append(Piece(row, col, PieceSide.COMPUTER))
-                    elif row > 4:
+                    elif row > self.total_rows // 2:
                         self.board[row].append(Piece(row, col, PieceSide.PLAYER))
                     else:
                         self.board[row].append(None)
