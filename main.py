@@ -1,46 +1,55 @@
+from core.board import Board
+from core.piece import PieceSide, Piece
+from game.game_context import GameContext, GameEventType
+from game.game_board import GameBoard
+from game.game_controller import BoardGameController
+from game.main_panel import MainPanel
+from minimax.checker_minimax import find_best_checker_move
+from enum import Enum
+import logging
+import sys
 import pygame
-from checkers.constants import WIDTH, HEIGHT, SQUARE_SIZE, RED, WHITE
-from checkers.game import Game
-from minimax.algorithm import minimax
+import os
 
-FPS = 60
+BOARD_SIZE = 10
 
-GAME_WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('Checkers')
+pygame.init()
 
-def get_row_col_from_mouse(pos):
-    x, y = pos
-    row = y // SQUARE_SIZE
-    col = x // SQUARE_SIZE
-    return row, col
+# log to console
+logging.basicConfig(level=logging.DEBUG,stream=sys.stdout)
 
-def main():
-    run = True
-    clock = pygame.time.Clock()
-    game = Game(GAME_WINDOW)
+logger = logging.getLogger(__name__)
 
-    while run:
-        clock.tick(FPS)
-        
-        if game.turn == WHITE:
-            value, new_board = minimax(game.get_board(), 4, WHITE, game)
-            game.ai_move(new_board)
+board = Board(BOARD_SIZE, BOARD_SIZE)
+game_context = GameContext()
+game_context.initialize(1000, 800, os.getcwd())
 
-        if game.winner() != None:
-            print(game.winner())
-            run = False
+game_board = GameBoard(board, 0, 0, 800, 800)
+main_panel = MainPanel(800, 0, 200, 800)
+main_panel.draw()
+game_controller = BoardGameController(board, game_board, game_context)
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                run = False
-            
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                pos = pygame.mouse.get_pos()
-                row, col = get_row_col_from_mouse(pos)
-                game.select(row, col)
-
-        game.update()
+def restart():
+    global board, game_board, game_controller
     
-    pygame.quit()
+    board = Board(BOARD_SIZE, BOARD_SIZE)
+    game_board = GameBoard(board, 0, 0, 800, 800)
+    game_controller = BoardGameController(board, game_board, game_context)
 
-main()
+while True:
+    events = pygame.event.get()
+    for event in events:
+        if event.type == pygame.QUIT:
+            sys.exit()
+            
+    while game_context.has_event():
+        event = game_context.pop_event()
+        if event.get_type() == GameEventType.RESTART:
+            logger.debug("Restart event received")
+            restart()
+            
+    game_board.update(events=events)
+    game_controller.update(events=events)
+    main_panel.update(events=events)
+    pygame.display.update()
+    pygame.time.Clock().tick(60)
