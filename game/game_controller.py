@@ -1,7 +1,8 @@
 from core.board import Board
 from core.piece import PieceSide
 from game.game_context import GameContext
-from game.board_renderer import BoardRenderer
+from game.game_board import GameBoard
+from game.game_object import GameObject
 from minimax.checker_minimax import find_best_checker_move
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -39,7 +40,7 @@ class GameStateContext(ABC):
         pass
     
     @abstractmethod
-    def get_board_renderer(self)->BoardRenderer:
+    def get_board_renderer(self)->GameBoard:
         pass
     
 class PlayerGameState(GameState):
@@ -53,18 +54,20 @@ class PlayerGameState(GameState):
         self.context = context
         self.possible_player_moves = {}
         self.last_selected_piece = None
+        self.pending_mouse = None
         super().__init__()
     
     def update(self, events: list[pygame.event.Event] = []):
-        for event in events:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                    self.handler_player_mouse()
+        if self.pending_mouse:
+            self._handler_player_mouse(self.pending_mouse)
+            self.pending_mouse = None
 
-    def handler_player_mouse(self):
+    def pending_player_mouse(self, square_clicked:tuple[int, int]):
+        self.pending_mouse = square_clicked
+
+    def _handler_player_mouse(self, square_clicked:tuple[int, int]):
         cur_board = self.context.get_board()
         cur_renderer = self.context.get_board_renderer()
-        pos_x, pos_y = pygame.mouse.get_pos()
-        square_clicked = cur_renderer.get_square_coor_by_pos(pos_x, pos_y)
         if square_clicked:
             piece = cur_board.get_piece(*square_clicked)
         
@@ -101,7 +104,9 @@ class PlayerGameState(GameState):
                         cur_board.remove(jump)
                     cur_board.move(self.last_selected_piece, square_clicked[0], square_clicked[1])
                     cur_renderer.set_board(cur_board)
-                    self.context.set_state(GameStates.COMPUTER_TURN)
+                    self.possible_player_moves = {}
+                    self.last_selected_piece = None
+                    self.context.set_state(GameStates.COMPUTER_TURN)        
                 self.last_selected_piece = None
             else:
                 self.last_selected_piece = None
@@ -160,21 +165,14 @@ class ComputerGameState(GameState):
         moves.reverse()
         self.cur_moves.extend(moves)
                    
-class GameController(GameStateContext):
+class BoardGameController(GameStateContext, GameObject):
     def __init__(self, board: Board, game_context: GameContext):
         self.board = board
         self.game_context = game_context
-        self.board_renderer = BoardRenderer(self.board, self.game_context)
+        self.game_board = GameBoard(self.board, self.game_context, self._handle_square_click)
         self.clock = pygame.time.Clock()
         self.current_state:GameState
         self._init_states()
-        
-    def _init_states(self):
-        self.states = {
-            GameStates.PLAYER_TURN: PlayerGameState(self),
-            GameStates.COMPUTER_TURN: ComputerGameState(self)
-        }
-        self.current_state = self.states[GameStates.PLAYER_TURN]
 
     def get_state(self, state: GameStates)->GameState:
         return self.states[state]
@@ -187,20 +185,24 @@ class GameController(GameStateContext):
     
     def set_board(self, board: Board):
         self.board = board
-        self.board_renderer.set_board(board)
+        self.game_board.set_board(board)
     
-    def get_board_renderer(self)->BoardRenderer:
-        return self.board_renderer
-
-    def run(self):
-        while True:
-            self.clock.tick(60)
-            events = pygame.event.get()
-            self.current_state.update(events)
-            for event in events:
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                    
-            pygame.display.update()
-            
+    def get_board_renderer(self)->GameBoard:
+        return self.game_board
+    
+    def update(self, events: list[pygame.event.Event] = []):
+        self.game_board.update(events)
+        self.current_state.update(events)
+        
+    def _handle_square_click(self, square_coor: tuple[int, int]):
+        self.clicked_square = square_coor
+        logger.debug(f"Square clicked: {square_coor}")
+        if isinstance(self.current_state, PlayerGameState):
+            self.current_state.pending_player_mouse(square_coor)
+        
+    def _init_states(self):
+        self.states = {
+            GameStates.PLAYER_TURN: PlayerGameState(self),
+            GameStates.COMPUTER_TURN: ComputerGameState(self)
+        }
+        self.current_state = self.states[GameStates.PLAYER_TURN]
