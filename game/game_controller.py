@@ -3,7 +3,7 @@ from core.piece import PieceSide
 from game.game_context import GameContext
 from game.game_board import GameBoard
 from game.game_object import GameObject
-from minimax.checker_minimax import find_best_checker_move
+from minimax.checker_minimax import CheckerMinimax
 from abc import ABC, abstractmethod
 from enum import Enum
 from collections import deque
@@ -120,6 +120,7 @@ class ComputerGameState(GameState):
         self.context = context
         self.cur_moves:deque[Board] = deque()
         self.counter = 0
+        self.checker_minimax = CheckerMinimax(4, 1)
         super().__init__()
     
     def update(self, events: list[pygame.event.Event] = []):
@@ -146,7 +147,7 @@ class ComputerGameState(GameState):
     def get_best_moves(self):
         logger.debug("Computer move")
         cur_board = self.context.get_board()
-        best_move, best_state = find_best_checker_move(cur_board, 4)
+        best_move, best_state = self.checker_minimax.find_best_checker_move(cur_board)
         moves = []
         move_pos = []
         while best_move:

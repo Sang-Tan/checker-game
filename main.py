@@ -1,17 +1,14 @@
 from core.board import Board
-from core.piece import PieceSide, Piece
 from game.game_context import GameContext, GameEventType
 from game.game_board import GameBoard
 from game.game_controller import BoardGameController
 from game.main_panel import MainPanel
-from minimax.checker_minimax import find_best_checker_move
-from enum import Enum
 import logging
 import sys
 import pygame
 import os
 
-BOARD_SIZE = 10
+BOARD_SIZE = 100
 
 pygame.init()
 
