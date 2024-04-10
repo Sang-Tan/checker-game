@@ -31,10 +31,17 @@ class MainPanel(VisibleGameObject):
                     
     def draw(self):
         pygame.draw.rect(self.surface, PANEL_COLOR, self.rect)
-        self.surface.blit(self.restart_btn, self.restart_btn_rect)        
+        self.surface.blit(self.restart_btn, self.restart_btn_rect)   
+        
+    def draw_turn_text(self, turn:str):
+        self.draw()
+        font = pygame.font.Font(None, 36)
+        text = font.render(f"Turn: {turn}", True, (0, 0, 0))
+        text_rect = text.get_rect()
+        text_rect.center = (self.rect.left + self.rect.width // 2, self.rect.top + 150)
+        self.surface.blit(text, text_rect)     
         
     def _load_buttons_images(self, root_path:str):
         self.restart_btn = pygame.image.load(f"{root_path}/assets/buttons/restart/normal.png")
         self.restart_btn_rect = self.restart_btn.get_rect()
-        self.restart_btn_rect.x = self._RESTART_BUTTON_X + self.rect.x
-        self.restart_btn_rect.y = self._RESTART_BUTTON_Y + self.rect.y
+        self.restart_btn_rect.center = (self.rect.left + self.rect.width // 2, self.rect.top + 50)

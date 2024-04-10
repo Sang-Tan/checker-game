@@ -1,20 +1,26 @@
 from common.singleton import SingletonMeta
 from enum import Enum
 from collections import deque
+from typing import Any
 import pygame
 
 class GameEventType(Enum):
-    RESTART = 0
+    RESTART = 0,
+    CHANGE_TURN = 1,
     
 class GameEvent:
-    def __init__(self, event_type:GameEventType):
-        self.event_type = event_type
+    def __init__(self, event_type:GameEventType, data:Any = None):
+        self._event_type = event_type
+        self._data = data
         
     def get_type(self)->GameEventType:
-        return self.event_type
+        return self._event_type
+    
+    def get_data(self)->Any:
+        return self._data
     
     def __str__(self):
-        return f"GameEvent({self.event_type})"
+        return f"GameEvent({self._event_type})"
     
     def __repr__(self):
         return str(self)

@@ -8,7 +8,7 @@ import sys
 import pygame
 import os
 
-BOARD_SIZE = 13
+BOARD_SIZE = 4
 
 pygame.init()
 
@@ -44,6 +44,10 @@ while True:
         if event.get_type() == GameEventType.RESTART:
             logger.debug("Restart event received")
             restart()
+        elif event.get_type() == GameEventType.CHANGE_TURN:
+            logger.debug("Change turn event received")
+            data = event.get_data()
+            main_panel.draw_turn_text(data)
             
     game_board.update(events=events)
     game_controller.update(events=events)
