@@ -1,14 +1,14 @@
-from core.board import Board
+from core.board import Board, PieceMove
 from core.piece import PieceSide
-from game.game_context import GameContext
+from game.game_context import GameContext, GameEvent, GameEventType
 from game.game_board import GameBoard
 from game.game_object import GameObject
 from minimax.checker_minimax import CheckerMinimax
 from abc import ABC, abstractmethod
 from enum import Enum
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 import logging
-import sys
 import pygame
 
 logger = logging.getLogger(__name__)
@@ -121,9 +121,16 @@ class ComputerGameState(GameState):
         self.cur_moves:deque[Board] = deque()
         self.counter = 0
         self.checker_minimax = CheckerMinimax(4, 1)
+        
+        self.executor = ThreadPoolExecutor(max_workers=1)
+        self.running = False
+        
         super().__init__()
     
     def update(self, events: list[pygame.event.Event] = []):
+        if self.running:
+            return
+        
         if len(self.cur_moves) <= 0:
             self.get_best_moves()
         else:
@@ -145,26 +152,40 @@ class ComputerGameState(GameState):
             self.counter -= 1
     
     def get_best_moves(self):
-        logger.debug("Computer move")
+        self.running = True
         cur_board = self.context.get_board()
-        best_move, best_state = self.checker_minimax.find_best_checker_move(cur_board)
-        moves = []
-        move_pos = []
-        while best_move:
-            # ignore root move
-            if not best_move.before:
-                break
-            
-            logger.debug(f"Move: {(best_move.row, best_move.col)}")
-            move_pos.append((best_move.row, best_move.col))
-            moves.append(cur_board.get_state_from_move(best_move))
-            best_move = best_move.before
         
-        move_pos.reverse()
-        print(f"Computer moves: {move_pos}")
+        future = self.executor.submit(self._calculate_best_moves, cur_board)
+        future.add_done_callback(lambda future: self._handle_best_moves(*future.result()))
+        
+    def _calculate_best_moves(self, cur_state: Board)->tuple[PieceMove, Board, Board]:
+        logger.debug("Computer start thinking")
+        best_move, best_state = self.checker_minimax.find_best_checker_move(cur_state)
+        
+        return best_move, best_state, cur_state
     
-        moves.reverse()
-        self.cur_moves.extend(moves)
+    def _handle_best_moves(self, best_move: PieceMove, best_state: Board, cur_state: Board):
+        try:
+            logger.debug("Computer end thinking and start moving")
+            moves = []
+            move_pos = []
+            while best_move:
+                # ignore root move
+                if not best_move.before:
+                    break
+                
+                logger.debug(f"Move: {(best_move.row, best_move.col)}")
+                move_pos.append((best_move.row, best_move.col))
+                moves.append(cur_state.get_state_from_move(best_move))
+                best_move = best_move.before
+            
+            move_pos.reverse()
+            print(f"Computer moves: {move_pos}")
+        
+            moves.reverse()
+            self.cur_moves.extend(moves)
+        finally:
+            self.running = False
                    
 class BoardGameController(GameStateContext, GameObject):
     def __init__(self, board:Board, game_board: GameBoard, game_context: GameContext):
@@ -182,6 +203,11 @@ class BoardGameController(GameStateContext, GameObject):
     
     def set_state(self, state: GameStates):
         self.current_state = self.states[state]
+        logger.debug(f"Set state: {state}")
+        if state == GameStates.COMPUTER_TURN:
+            self.game_context.push_event(GameEvent(GameEventType.CHANGE_TURN, "Computer"))
+        else:
+            self.game_context.push_event(GameEvent(GameEventType.CHANGE_TURN, "Player"))
         
     def get_board(self)->Board:
         return self.board
@@ -194,7 +220,6 @@ class BoardGameController(GameStateContext, GameObject):
         return self.game_board
     
     def update(self, events: list[pygame.event.Event] = []):
-        self.game_board.update(events)
         self.current_state.update(events)
         
     def _handle_square_click(self, square_coor: tuple[int, int]):
@@ -208,4 +233,4 @@ class BoardGameController(GameStateContext, GameObject):
             GameStates.PLAYER_TURN: PlayerGameState(self),
             GameStates.COMPUTER_TURN: ComputerGameState(self)
         }
-        self.current_state = self.states[GameStates.PLAYER_TURN]
+        self.set_state(GameStates.PLAYER_TURN)

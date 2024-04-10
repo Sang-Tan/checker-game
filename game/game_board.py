@@ -106,7 +106,6 @@ class GameBoard(VisibleGameObject):
                 
     def _draw_square(self, row:int, col:int, square_width:float, square_height:float):        
         square_rect = self._get_square_rect(row, col, square_width, square_height)
-        logger.debug(f"Drawing square at {square_rect.topleft} to {square_rect.bottomright}")
         square_color = SQUARE_COLOR_1 if (row + col) % 2 == 0 else SQUARE_COLOR_2
         pygame.draw.rect(self.screen_context.get_window(), square_color, square_rect)
                 
