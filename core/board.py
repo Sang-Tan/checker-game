@@ -40,7 +40,8 @@ class Board(GameState, BoardData):
         return len(self.board)
 
     def heuristic(self):
-        return self.pieces_left[PieceSide.COMPUTER] - self.pieces_left[PieceSide.PLAYER] + (self.kings[PieceSide.COMPUTER] - self.kings[PieceSide.PLAYER])
+        return self.pieces_left[PieceSide.COMPUTER] - self.pieces_left[PieceSide.PLAYER] + \
+            (self.kings[PieceSide.COMPUTER] - self.kings[PieceSide.PLAYER])
 
     def get_all_moves(self, side)->list["Board"]:
         moves = []
