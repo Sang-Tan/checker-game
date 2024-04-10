@@ -141,7 +141,7 @@ class ComputerGameState(GameState):
     def get_best_moves(self):
         logger.debug("Computer move")
         cur_board = self.context.get_board()
-        best_move, best_state = find_best_checker_move(cur_board, 1)
+        best_move, best_state = find_best_checker_move(cur_board, 4)
         moves = []
         move_pos = []
         while best_move:
