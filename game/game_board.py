@@ -66,14 +66,16 @@ class GameBoard(VisibleGameObject):
             
     def get_square_coor_by_pos(self, x:int, y:int)->tuple[int, int] | None:
         board_rect = self.rect
-        square_width = board_rect.width // self.board_size
-        square_height = board_rect.height // self.board_size
         if not board_rect.collidepoint(x, y):
             return None
-        col = (x - board_rect.left) // square_width
-        row = (y - board_rect.top) // square_height
+
+        square_width = board_rect.width / self.board_size
+        square_height = board_rect.height / self.board_size
         
-        return row, col
+        col = (x - board_rect.left) / square_width
+        row = (y - board_rect.top) / square_height
+        
+        return int(row), int(col)
 
     def _set_board(self, board_data: BoardData):
         self.board = board_data
