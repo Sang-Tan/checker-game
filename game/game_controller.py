@@ -1,85 +1,206 @@
-from core.board import Board as BoardState
+from core.board import Board
 from core.piece import PieceSide
-from minimax.algorithm import minimax
-from .board_renderer import BoardRenderer
+from game.game_context import GameContext
+from game.board_renderer import BoardRenderer
+from minimax.checker_minimax import find_best_checker_move
+from abc import ABC, abstractmethod
+from enum import Enum
+from collections import deque
+import logging
+import sys
+import pygame
 
-class GameController:
-    def __init__(self, rows:int, cols:int):
-        self.board_state = BoardState(rows, cols)
+logger = logging.getLogger(__name__)
 
-    def print_board(board_data):
-        print(" ", end=" ")
-        for i in range(len(board_data[0])):
-            print(i, end=" ")
-            
-        print()
-            
-        for idx, row in enumerate(board_data):
-            print(idx, end=" ")
-            for piece in row:
-                if piece != None:
-                    name = "C" if piece.side == PieceSide.COMPUTER else "P"
-                    print(name, end=" ")
-                else:
-                    print(" ", end=" ")
-            print()
-            
-        for _ in range(len(board_data[0])):
-            print("-", end=" ")
-            
-        print(f'\nPlayer pieces left: {board.pieces_left[PieceSide.PLAYER]}')
-        print(f'Computer pieces left: {board.pieces_left[PieceSide.COMPUTER]}')
-        print()
-
-turn = PieceSide.PLAYER
-current_piece = None
-
-while True:
-    print_board(board.get_data())
-    while True:
-        piece_row, piece_col = map(int, input("Enter piece's row and col: ").split())
-        piece = board.get_piece(piece_row, piece_col)
-        if piece == None:
-            print("No piece at that location")
-        elif piece.side == PieceSide.COMPUTER:
-            print("That's the computer's piece")
-        else:
-            current_piece = piece
-            break
+class GameState:
+    @abstractmethod
+    def update(self, events: list[pygame.event.Event] = []):
+        pass
+    
+class GameStates(Enum):
+    PLAYER_TURN = 0
+    COMPUTER_TURN = 1
+    
+class GameStateContext(ABC):
+    @abstractmethod
+    def get_state(self, state: GameStates)->GameState:
+        pass
+    
+    @abstractmethod
+    def set_state(self, state: GameStates):
+        pass
+    
+    @abstractmethod
+    def get_board(self)->Board:
+        pass
+    
+    @abstractmethod
+    def set_board(self, board: Board):
+        pass
+    
+    @abstractmethod
+    def get_board_renderer(self)->BoardRenderer:
+        pass
+    
+class PlayerGameState(GameState):
+    class SquareState(Enum):
+        EMPTY = 0
+        PLAYER = 1
+        OPPONENT = 2
+        MARKER = 3
         
-    moves = board.get_valid_moves(piece)
-    valid_moves = list(moves.keys())
-    print("Valid moves: ", valid_moves)
+    def __init__(self, context: GameStateContext):
+        self.context = context
+        self.possible_player_moves = {}
+        self.last_selected_piece = None
+        super().__init__()
     
-    if len(valid_moves) == 0:
-        print("No valid moves")
-        continue
-    
-    while True:
-        move_row, move_col = map(int, input("Enter move's row and col: ").split())
-        if (move_row, move_col) in valid_moves:
-            board.move(current_piece, move_row, move_col)
-            jumped_over_pieces = moves[(move_row, move_col)]
-            if jumped_over_pieces:
-                board.remove(jumped_over_pieces)
-            break
-        else:
-            print("Invalid move")
-            continue
+    def update(self, events: list[pygame.event.Event] = []):
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                    self.handler_player_mouse()
+
+    def handler_player_mouse(self):
+        cur_board = self.context.get_board()
+        cur_renderer = self.context.get_board_renderer()
+        pos_x, pos_y = pygame.mouse.get_pos()
+        square_clicked = cur_renderer.get_square_coor_by_pos(pos_x, pos_y)
+        if square_clicked:
+            piece = cur_board.get_piece(*square_clicked)
+        
+            if square_clicked in self.possible_player_moves:
+                square_state = self.SquareState.MARKER
+            elif not piece: 
+                square_state = self.SquareState.EMPTY
+            elif piece.side == PieceSide.PLAYER:
+                square_state = self.SquareState.PLAYER
+            else:
+                square_state = self.SquareState.OPPONENT
+        
+            if square_state == self.SquareState.PLAYER:
+                piece = cur_board.get_piece(*square_clicked)
+                if not piece:
+                    raise Exception("Invalid piece")
             
-    print_board(board.get_data())
+                moves = cur_board.get_valid_moves(piece)
+                moves_pos = list(moves.keys())
+                markers_pos = []
+                for move_pos in moves_pos:
+                    logger.debug(f"Move pos: {move_pos}")
+                    markers_pos.append(move_pos)
+                
+                self.last_selected_piece = piece
+                self.possible_player_moves = moves
+                cur_renderer.set_markers(markers_pos)
+            elif square_state == self.SquareState.MARKER:
+                if self.last_selected_piece:
+                    cur_renderer.clear_markers()
+                    logger.debug(f"Moving piece: {self.last_selected_piece} to {square_clicked}")
+                    jump = self.possible_player_moves[square_clicked]
+                    if jump:
+                        cur_board.remove(jump)
+                    cur_board.move(self.last_selected_piece, square_clicked[0], square_clicked[1])
+                    cur_renderer.set_board(cur_board)
+                    self.context.set_state(GameStates.COMPUTER_TURN)
+                self.last_selected_piece = None
+            else:
+                self.last_selected_piece = None
+                cur_renderer.clear_markers()
+                    
+class ComputerGameState(GameState):
+    MAX_COUNTER = 10
     
-    if board.winner() != None:
-        print("Winner: ", board.winner())
-        break
+    def __init__(self, context: GameStateContext):
+        logger.debug("ComputerGameState init")
+        self.context = context
+        self.cur_moves:deque[Board] = deque()
+        self.counter = 0
+        super().__init__()
     
-    best_move = minimax(board, 4, True)[1]
+    def update(self, events: list[pygame.event.Event] = []):
+        if len(self.cur_moves) <= 0:
+            self.get_best_moves()
+        else:
+            self.move()
     
-    if isinstance(best_move, Board):
-        board = best_move 
-    else:
-        raise Exception("Invalid move")
+    def move(self):
+        logger.debug("Counter: %d", self.counter)
+        if self.counter <= 0:
+            move = self.cur_moves.popleft()
+            self.context.set_board(move)
+            
+            if len(self.cur_moves) <= 0:
+                logger.debug("Computer turn end")
+                self.context.set_state(GameStates.PLAYER_TURN)
+            else:
+                logger.debug("Reset counter")
+                self.counter = ComputerGameState.MAX_COUNTER
+        else:
+            self.counter -= 1
     
-    print("Computer's moved")
+    def get_best_moves(self):
+        logger.debug("Computer move")
+        cur_board = self.context.get_board()
+        best_move, best_state = find_best_checker_move(cur_board, 1)
+        moves = []
+        move_pos = []
+        while best_move:
+            # ignore root move
+            if not best_move.before:
+                break
+            
+            logger.debug(f"Move: {(best_move.row, best_move.col)}")
+            move_pos.append((best_move.row, best_move.col))
+            moves.append(cur_board.get_state_from_move(best_move))
+            best_move = best_move.before
+        
+        move_pos.reverse()
+        print(f"Computer moves: {move_pos}")
     
+        moves.reverse()
+        self.cur_moves.extend(moves)
+                   
+class GameController(GameStateContext):
+    def __init__(self, board: Board, game_context: GameContext):
+        self.board = board
+        self.game_context = game_context
+        self.board_renderer = BoardRenderer(self.board, self.game_context)
+        self.clock = pygame.time.Clock()
+        self.current_state:GameState
+        self._init_states()
+        
+    def _init_states(self):
+        self.states = {
+            GameStates.PLAYER_TURN: PlayerGameState(self),
+            GameStates.COMPUTER_TURN: ComputerGameState(self)
+        }
+        self.current_state = self.states[GameStates.PLAYER_TURN]
+
+    def get_state(self, state: GameStates)->GameState:
+        return self.states[state]
     
+    def set_state(self, state: GameStates):
+        self.current_state = self.states[state]
+        
+    def get_board(self)->Board:
+        return self.board
+    
+    def set_board(self, board: Board):
+        self.board = board
+        self.board_renderer.set_board(board)
+    
+    def get_board_renderer(self)->BoardRenderer:
+        return self.board_renderer
+
+    def run(self):
+        while True:
+            self.clock.tick(60)
+            events = pygame.event.get()
+            self.current_state.update(events)
+            for event in events:
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                    
+            pygame.display.update()
+            
