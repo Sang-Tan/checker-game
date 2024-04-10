@@ -7,6 +7,7 @@ import pygame
 class GameEventType(Enum):
     RESTART = 0,
     CHANGE_TURN = 1,
+    CHANGE_SIZE = 2,
     
 class GameEvent:
     def __init__(self, event_type:GameEventType, data:Any = None):
