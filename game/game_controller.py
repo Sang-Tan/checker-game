@@ -166,10 +166,12 @@ class ComputerGameState(GameState):
         self.cur_moves.extend(moves)
                    
 class BoardGameController(GameStateContext, GameObject):
-    def __init__(self, board: Board, game_context: GameContext):
+    def __init__(self, board:Board, game_board: GameBoard, game_context: GameContext):
+        # TODO: clean code
         self.board = board
         self.game_context = game_context
-        self.game_board = GameBoard(self.board, self.game_context, self._handle_square_click)
+        self.game_board = game_board
+        self.game_board.on_square_click = self._handle_square_click
         self.clock = pygame.time.Clock()
         self.current_state:GameState
         self._init_states()

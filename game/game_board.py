@@ -4,7 +4,6 @@ from core.piece import PieceSide
 from core.board import BoardData
 from .game_context import GameContext
 from .game_object import VisibleGameObject
-from enum import Enum
 from typing import Callable
 import os
 
@@ -20,13 +19,15 @@ OPPONENT_PIECE_IMG = 'assets/white_piece.png'
 OPPONENT_KING_IMG = 'assets/white_king.png'
     
 class GameBoard(VisibleGameObject):
-    def __init__(self, board_data: BoardData, screen_context:GameContext, on_square_click:Callable[[tuple[int, int]], None]):
-        super().__init__(0, 0, screen_context.get_window().get_width(), screen_context.get_window().get_height())
-        self.screen_context = screen_context
-        self.on_square_click = on_square_click if on_square_click is not None else lambda x: None
+    def __init__(self, board_data: BoardData,
+                 board_left:int, board_top:int, board_width:int, board_height:int,
+                 on_square_click:Callable[[tuple[int, int]], None] = lambda x: None):
+        super().__init__(board_left, board_top, board_width, board_height)
+        self.screen_context = GameContext()
+        self.on_square_click = on_square_click
         self.markers:list[tuple[int, int]] = []
         self._set_board(board_data)
-        self._load_images(screen_context.get_root_path())
+        self._load_images(self.screen_context.get_root_path())
         self.draw()
         
         
@@ -34,8 +35,10 @@ class GameBoard(VisibleGameObject):
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = self._get_local_mouse_pos()
+                logger.debug(f"Mouse clicked at {mouse_x}, {mouse_y}")
                 square_coor = self.get_square_coor_by_pos(mouse_x, mouse_y)
                 if square_coor is not None:
+                    logger.debug(f"Square clicked at {square_coor}")
                     self.on_square_click(square_coor)
         
     def set_board(self, board_data: BoardData):
