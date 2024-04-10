@@ -8,7 +8,7 @@ import sys
 import pygame
 import os
 
-BOARD_SIZE = 100
+BOARD_SIZE = 13
 
 pygame.init()
 

@@ -57,8 +57,8 @@ class GameBoard(VisibleGameObject):
         
     def clear_markers(self):
         board_rect = self.rect
-        square_width = board_rect.width // self.board_size
-        square_height = board_rect.height // self.board_size
+        square_width = board_rect.width / self.board_size
+        square_height = board_rect.height / self.board_size
         for row, col in self.markers:
             self._draw_square(row, col, square_width, square_height)
             
@@ -98,37 +98,29 @@ class GameBoard(VisibleGameObject):
         self.opponent_king_img = pygame.transform.scale(self.opponent_king_img, (piece_width, piece_height))
         
     def _draw_squares(self):
-        square_width = self.rect.width // self.board_size
-        square_height = self.rect.height // self.board_size
+        square_width = self.rect.width / self.board_size
+        square_height = self.rect.height / self.board_size
         for row in range(self.board_size):
             for col in range(self.board_size):
                 self._draw_square(row, col, square_width, square_height)
                 
-    def _draw_square(self, row:int, col:int, square_width:int, square_height:int):
-        pos_x = self.rect.left
-        pos_y = self.rect.top
-        
-        square_rect = pygame.Rect(
-            pos_x + col * square_width,
-            pos_y + row * square_height,
-            square_width,
-            square_height
-        )
+    def _draw_square(self, row:int, col:int, square_width:float, square_height:float):        
+        square_rect = self._get_square_rect(row, col, square_width, square_height)
+        logger.debug(f"Drawing square at {square_rect.topleft} to {square_rect.bottomright}")
         square_color = SQUARE_COLOR_1 if (row + col) % 2 == 0 else SQUARE_COLOR_2
         pygame.draw.rect(self.screen_context.get_window(), square_color, square_rect)
                 
     def _draw_pieces(self):
         board_rect = self.rect
-        square_width = board_rect.width // self.board_size
-        square_height = board_rect.height // self.board_size
+        square_width = board_rect.width / self.board_size
+        square_height = board_rect.height / self.board_size
         for row in range(self.board_size):
             for col in range(self.board_size):
                 self._draw_piece(row, col, board_rect, square_width, square_height)
                 
-    def _draw_piece(self, row:int, col:int, board_rect:pygame.Rect, square_width:int, square_height:int):
+    def _draw_piece(self, row:int, col:int, board_rect:pygame.Rect, square_width:float, square_height:float):
+        square_rect = self._get_square_rect(row, col, square_width, square_height)
         piece = self.board[row][col]
-        piece_width = square_width // 2
-        piece_height = square_height // 2
         if piece is None:
             return
         if piece.side == PieceSide.PLAYER:
@@ -138,20 +130,31 @@ class GameBoard(VisibleGameObject):
 
         piece_rect = piece_image.get_rect()
         piece_rect.center = (
-            int(board_rect.left + col * square_width + square_width / 2),
-            int(board_rect.top + row * square_height + square_height / 2)
+            int(square_rect.left + square_rect.width / 2),
+            int(square_rect.top + square_rect.height / 2)
         )
         self.screen_context.get_window().blit(piece_image, piece_rect)
                 
+    def _get_square_rect(self, row:int, col:int, square_width:float, square_height:float)->pygame.Rect:
+        pivot_x, pivot_y = self.rect.topleft
+        start_x = int(pivot_x + col * square_width)
+        start_y = int(pivot_y + row * square_height)
+        next_x = int(pivot_x + (col + 1) * square_width)
+        next_y = int(pivot_y + (row + 1) * square_height)
+        draw_width = next_x - start_x
+        draw_height = next_y - start_y    
+        
+        return pygame.Rect(
+            int(start_x),
+            int(start_y),
+            draw_width,
+            draw_height
+        )
+    
     def _draw_markers(self):
         board_rect = self.rect
         square_width = board_rect.width / self.board_size
         square_height = board_rect.height / self.board_size
         for row, col in self.markers:
-            marker_rect = pygame.Rect(
-                board_rect.left + col * square_width,
-                board_rect.top + row * square_height,
-                square_width,
-                square_height
-            )
+            marker_rect = self._get_square_rect(row, col, square_width, square_height)
             pygame.draw.rect(self.screen_context.get_window(), MARKER_COLOR, marker_rect)
