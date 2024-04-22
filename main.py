@@ -11,6 +11,14 @@ import os
 BOARD_SIZE_MIN = 8
 BOARD_SIZE_MAX = float('inf')
 
+WINDOWS_WIDTH = 1000
+WINDOWS_HEIGHT = 800
+BOARD_WIDTH = 800
+BOARD_HEIGHT = 800
+PANEL_WIDTH = 200
+PANEL_HEIGHT = 800
+
+
 board_size = BOARD_SIZE_MIN
 
 pygame.init()
@@ -22,10 +30,10 @@ logger = logging.getLogger(__name__)
 
 board = Board(board_size, board_size)
 game_context = GameContext()
-game_context.initialize(1000, 800, os.getcwd())
+game_context.initialize(WINDOWS_WIDTH, WINDOWS_HEIGHT, os.getcwd())
 
-game_board = GameBoard(board, 0, 0, 800, 800)
-main_panel = MainPanel(800, 0, 200, 800)
+game_board = GameBoard(board, 0, 0, BOARD_WIDTH, BOARD_HEIGHT)
+main_panel = MainPanel(BOARD_WIDTH, 0, PANEL_WIDTH, PANEL_HEIGHT)
 main_panel.set_size_text(f"{board_size}x{board_size}")
 main_panel.draw()
 
@@ -36,7 +44,7 @@ def restart():
     global board, game_board, game_controller
     
     board = Board(board_size, board_size)
-    game_board = GameBoard(board, 0, 0, 800, 800)
+    game_board = GameBoard(board, 0, 0, BOARD_WIDTH, BOARD_HEIGHT)
     game_controller = BoardGameController(board, game_board, game_context)
 
 while True:
