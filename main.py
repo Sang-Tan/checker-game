@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 board = Board(board_size, board_size)
 game_context = GameContext()
 game_context.initialize(os.getcwd(), {s:dict(config.items(s)) for s in config.sections()})
+game_context.set_board_size(board_size)
 
 board_width = int(game_context.get_config()["WINDOW"]["board-width"])
 board_height = int(game_context.get_config()["WINDOW"]["board-height"])
@@ -52,6 +53,7 @@ def restart():
     global board, game_board, game_controller
     
     board = Board(board_size, board_size)
+    game_context.set_board_size(board_size)
     game_board = GameBoard(board, 0, 0, board_width, board_height)
     game_controller = BoardGameController(board, game_board, game_context)
 

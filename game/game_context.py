@@ -54,3 +54,10 @@ class GameContext(metaclass=SingletonMeta):
         if not hasattr(self, "_config"):
             raise Exception("Config not set")
         return self._config
+    def set_board_size(self, size:int):
+        self._board_size = size
+    
+    def get_board_size(self)->int:
+        if hasattr(self, "_board_size"):
+            return self._board_size
+        raise Exception("Board size not set")
