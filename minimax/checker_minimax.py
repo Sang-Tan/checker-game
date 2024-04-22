@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 class CheckerMinimax:
     def __init__(self, max_depth:int, time_limit_sec:int, alpha_beta:bool = True):
+        print(alpha_beta)
         self.max_depth = max_depth
         self.time_limit = time_limit_sec
         self.start_time = time.time()

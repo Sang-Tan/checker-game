@@ -3,6 +3,7 @@ from game.game_context import GameContext, GameEventType
 from game.game_board import GameBoard
 from game.game_controller import BoardGameController
 from game.main_panel import MainPanel
+import configparser
 import logging
 import sys
 import pygame
@@ -11,13 +12,15 @@ import os
 BOARD_SIZE_MIN = 8
 BOARD_SIZE_MAX = float('inf')
 
-WINDOWS_WIDTH = 1000
-WINDOWS_HEIGHT = 800
-BOARD_WIDTH = 800
-BOARD_HEIGHT = 800
-PANEL_WIDTH = 200
-PANEL_HEIGHT = 800
+# WINDOWS_WIDTH = 1000
+# WINDOWS_HEIGHT = 800
+# BOARD_WIDTH = 800
+# BOARD_HEIGHT = 800
+# PANEL_WIDTH = 200
+# PANEL_HEIGHT = 800
 
+config = configparser.ConfigParser()
+config.read("game_config.ini")
 
 board_size = BOARD_SIZE_MIN
 
@@ -30,10 +33,15 @@ logger = logging.getLogger(__name__)
 
 board = Board(board_size, board_size)
 game_context = GameContext()
-game_context.initialize(WINDOWS_WIDTH, WINDOWS_HEIGHT, os.getcwd())
+game_context.initialize(os.getcwd(), {s:dict(config.items(s)) for s in config.sections()})
 
-game_board = GameBoard(board, 0, 0, BOARD_WIDTH, BOARD_HEIGHT)
-main_panel = MainPanel(BOARD_WIDTH, 0, PANEL_WIDTH, PANEL_HEIGHT)
+board_width = int(game_context.get_config()["WINDOW"]["board-width"])
+board_height = int(game_context.get_config()["WINDOW"]["board-height"])
+panel_width = int(game_context.get_config()["WINDOW"]["panel-width"])
+panel_height = int(game_context.get_config()["WINDOW"]["panel-height"])
+
+game_board = GameBoard(board, 0, 0, board_width, board_height)
+main_panel = MainPanel(board_width, 0, panel_width, panel_height)
 main_panel.set_size_text(f"{board_size}x{board_size}")
 main_panel.draw()
 
@@ -44,7 +52,7 @@ def restart():
     global board, game_board, game_controller
     
     board = Board(board_size, board_size)
-    game_board = GameBoard(board, 0, 0, BOARD_WIDTH, BOARD_HEIGHT)
+    game_board = GameBoard(board, 0, 0, board_width, board_height)
     game_controller = BoardGameController(board, game_board, game_context)
 
 while True:

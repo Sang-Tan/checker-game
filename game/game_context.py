@@ -27,10 +27,13 @@ class GameEvent:
         return str(self)
 
 class GameContext(metaclass=SingletonMeta):
-    def initialize(self, window_width:int, window_height:int, root_path:str):        
+    def initialize(self, root_path:str, config:dict):      
+        window_width = int(config["WINDOW"]["window-width"])
+        window_height = int(config["WINDOW"]["window-height"])
         self._window = pygame.display.set_mode((window_width, window_height))
         self._root_path = root_path
         self._event_queue = deque()
+        self._config = config
         
     def push_event(self, event:GameEvent):
         self._event_queue.append(event)
@@ -46,3 +49,8 @@ class GameContext(metaclass=SingletonMeta):
     
     def get_root_path(self)->str:
         return self._root_path
+    
+    def get_config(self)->dict:
+        if not hasattr(self, "_config"):
+            raise Exception("Config not set")
+        return self._config
