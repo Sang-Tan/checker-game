@@ -120,7 +120,7 @@ class ComputerGameState(GameState):
         self.context = context
         self.cur_moves:deque[Board] = deque()
         self.counter = 0
-        self.checker_minimax = CheckerMinimax(4, 1)
+        self.checker_minimax = CheckerMinimax(4, 100)
         
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.running = False
