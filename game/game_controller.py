@@ -116,11 +116,14 @@ class ComputerGameState(GameState):
     MAX_COUNTER = 10
     
     def __init__(self, context: GameStateContext):
+        game_config = GameContext().get_config()["GAME"]     
         logger.debug("ComputerGameState init")
         self.context = context
         self.cur_moves:deque[Board] = deque()
         self.counter = 0
-        self.checker_minimax = CheckerMinimax(4, 1)
+        self.checker_minimax = CheckerMinimax(int(game_config["computer-max-depth"]), 
+                                              int(game_config["computer-limit-sec"]),
+                                              eval(game_config["computer-alpha-beta"]))
         
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.running = False
